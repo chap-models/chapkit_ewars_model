@@ -22,7 +22,7 @@ run: build
 
 run-ghcr:
 	@echo ">>> Running $(GHCR_IMAGE) on :8000"
-	@docker run --rm --pull always -p 8000:8000 --name chapkit-ewars-template $(GHCR_IMAGE)
+	@docker run --rm --pull always --platform linux/amd64 -p 8000:8000 --name chapkit-ewars-template $(GHCR_IMAGE)
 
 lint:
 	@echo ">>> Ruff format check"
