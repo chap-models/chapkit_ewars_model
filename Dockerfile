@@ -1,45 +1,34 @@
-# R-INLA is amd64-only, so both stages are pinned to linux/amd64.
-# Exposed as an ARG to keep the Dockerfile portable and silence
-# buildkit's FromPlatformFlagConstDisallowed lint warning.
+# R-INLA is amd64-only.
 ARG BASE_PLATFORM=linux/amd64
 
-# Stage 1: Install Python dependencies
-FROM --platform=${BASE_PLATFORM} ghcr.io/astral-sh/uv:0.11-python3.13-trixie-slim AS python-builder
-WORKDIR /build
-COPY pyproject.toml ./
-RUN uv sync --no-dev
-
-# Stage 2: Runtime with R (INLA) + Python (chapkit)
 FROM --platform=${BASE_PLATFORM} ghcr.io/dhis2-chap/docker_r_inla:master
 
-# Install Python 3.13
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    software-properties-common \
-    curl \
-    && curl -fsSL https://raw.githubusercontent.com/deadsnakes/issues/master/README.md > /dev/null 2>&1 || true \
-    && add-apt-repository -y ppa:deadsnakes/ppa 2>/dev/null \
-    || (echo "deb http://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu jammy main" >> /etc/apt/sources.list.d/deadsnakes.list \
-        && apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F23C5A6CF475977595C89F51BA6932366A755776) \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends \
-    python3.13 \
-    python3.13-venv \
-    python3.13-dev \
-    && ln -sf /usr/bin/python3.13 /usr/local/bin/python \
-    && ln -sf /usr/bin/python3.13 /usr/local/bin/python3 \
-    && rm -rf /var/lib/apt/lists/*
+# Ubuntu Noble ships Python 3.12; pull 3.13 from deadsnakes.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends software-properties-common \
+ && add-apt-repository -y ppa:deadsnakes/ppa \
+ && apt-get install -y --no-install-recommends python3.13 python3.13-venv \
+ && apt-get purge -y software-properties-common \
+ && apt-get autoremove -y \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY --from=ghcr.io/astral-sh/uv:0.11 /uv /uvx /usr/local/bin/
+
+ENV UV_LINK_MODE=copy \
+    UV_COMPILE_BYTECODE=1 \
+    UV_PROJECT_ENVIRONMENT=/app/.venv \
+    UV_PYTHON=python3.13 \
+    UV_PYTHON_PREFERENCE=only-system \
+    PATH="/app/.venv/bin:${PATH}"
 
 WORKDIR /app
 
-# Copy Python virtual environment from builder
-COPY --from=python-builder /build/.venv /app/.venv
-ENV PATH="/app/.venv/bin:/usr/local/bin:$PATH"
-ENV VIRTUAL_ENV="/app/.venv"
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
 
-# Copy application files
-COPY main.py pyproject.toml ./
+COPY main.py ./
 COPY scripts/ ./scripts/
 
 EXPOSE 8000
 
-CMD ["python3.13", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
