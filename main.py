@@ -25,7 +25,9 @@ class EwarsConfig(BaseConfig):
 
 runner: ShellModelRunner[EwarsConfig] = ShellModelRunner(
     train_command="Rscript scripts/train.R --data {data_file}",
-    predict_command="Rscript scripts/predict.R --historic {historic_file} --future {future_file} --output {output_file}",
+    predict_command=(
+        "Rscript scripts/predict.R --historic {historic_file} --future {future_file} --output {output_file}"
+    ),
 )
 
 info = MLServiceInfo(
@@ -65,13 +67,10 @@ if DATABASE_URL.startswith("sqlite") and ":///" in DATABASE_URL:
     db_path = Path(DATABASE_URL.split("///")[1])
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
-app = (
-    MLServiceBuilder(
-        info=info,
-        config_schema=EwarsConfig,
-        hierarchy=hierarchy,
-        runner=runner,
-        database_url=DATABASE_URL,
-    )
-    .build()
-)
+app = MLServiceBuilder(
+    info=info,
+    config_schema=EwarsConfig,
+    hierarchy=hierarchy,
+    runner=runner,
+    database_url=DATABASE_URL,
+).build()
