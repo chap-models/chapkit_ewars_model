@@ -3,11 +3,10 @@
 > WHO EWARS Bayesian INLA disease-forecasting model, wrapped as a [chapkit](https://github.com/dhis2-chap/chapkit) service and ready to plug into [chap-core](https://github.com/dhis2-chap/chap-core).
 
 [![CI](https://github.com/chap-models/chapkit_ewars_template/actions/workflows/ci.yml/badge.svg)](https://github.com/chap-models/chapkit_ewars_template/actions/workflows/ci.yml)
-[![Publish Docker](https://github.com/chap-models/chapkit_ewars_template/actions/workflows/publish-docker.yml/badge.svg)](https://github.com/chap-models/chapkit_ewars_template/actions/workflows/publish-docker.yml)
+[![Docker](https://github.com/chap-models/chapkit_ewars_template/actions/workflows/publish-docker.yml/badge.svg)](https://github.com/chap-models/chapkit_ewars_template/actions/workflows/publish-docker.yml)
 [![GHCR](https://img.shields.io/badge/ghcr.io-chap--models%2Fchapkit__ewars__template-blue?logo=docker)](https://github.com/chap-models/chapkit_ewars_template/pkgs/container/chapkit_ewars_template)
 [![Python](https://img.shields.io/badge/python-3.13%2B-blue)](https://www.python.org/)
 [![License: GPLv3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-[![powered by chapkit](https://img.shields.io/badge/powered%20by-chapkit-8A2BE2)](https://github.com/dhis2-chap/chapkit)
 
 ## Overview
 
