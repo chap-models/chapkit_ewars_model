@@ -67,10 +67,14 @@ if DATABASE_URL.startswith("sqlite") and ":///" in DATABASE_URL:
     db_path = Path(DATABASE_URL.split("///")[1])
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
-app = MLServiceBuilder(
-    info=info,
-    config_schema=EwarsConfig,
-    hierarchy=hierarchy,
-    runner=runner,
-    database_url=DATABASE_URL,
-).build()
+app = (
+    MLServiceBuilder(
+        info=info,
+        config_schema=EwarsConfig,
+        hierarchy=hierarchy,
+        runner=runner,
+        database_url=DATABASE_URL,
+    )
+    .with_registration(keepalive_interval=15)
+    .build()
+)
