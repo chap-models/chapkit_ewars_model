@@ -21,6 +21,10 @@ class EwarsConfig(BaseConfig):
         default=0.01,
         description="Prior on the precision of fixed effects. Works as regularization",
     )
+    region_seasonal: bool = Field(
+        default=False,
+        description="Optional inclusion of region specific seasonal effects",
+    )
     # BaseConfig reserves `additional_continuous_covariates` as a CHAP-interpreted
     # field. scripts/predict.R reads it into `covariate_names` and wires those
     # columns into `generate_lagged_model`. The default here makes EWARS use
