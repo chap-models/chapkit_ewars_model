@@ -163,9 +163,9 @@ The generated `main.py` also ships with some things the reference `chapkit_ewars
 - A `if __name__ == "__main__":` runner that calls `run_app("main:app", reload=False)`, allowing `python main.py` as an alternative to `uvicorn main:app`.
 - Explanatory comment blocks above the runner and command templates.
 
-One scaffold extra is worth keeping even if you delete the others: the commented-out `.with_registration(...)` block. It documents how to self-register with a live CHAP Core instance on startup. If you plan to deploy this service against a real CHAP Core, leave it in place and uncomment when you are ready — see section B.8 below for the full story.
+The reference repo includes `.with_registration(keepalive_interval=15)` in the builder chain — registration is controlled by env vars at runtime, so there is nothing to uncomment. See section B.8 for the full story.
 
-The reference repo trims all of these to keep `main.py` short (77 lines). You do not have to.
+The reference repo keeps `main.py` at ~100 lines. You do not have to match that.
 
 ### A.3.1 Config class
 
@@ -187,9 +187,20 @@ class EwarsConfig(BaseConfig):
         default=0.01,
         description="Prior on the precision of fixed effects. Works as regularization",
     )
+    region_seasonal: bool = Field(
+        default=False,
+        description="Optional inclusion of region specific seasonal effects",
+    )
+    # BaseConfig reserves `additional_continuous_covariates` — override the
+    # default here so EWARS uses rainfall + mean_temperature out of the box.
+    # Deployments can override per-config via POST /api/v1/configs.
+    additional_continuous_covariates: list[str] = Field(
+        default_factory=lambda: ["rainfall", "mean_temperature"],
+        description="Continuous covariates for the lagged INLA model",
+    )
 ```
 
-Every field here replaces what used to live in a flat YAML config file. Validation and defaults now live in Python, and the schema is auto-exposed at `/api/v1/configs/$schema`.
+Every field here replaces what used to live in a flat YAML config file. Validation and defaults now live in Python, and the schema is auto-exposed at `/api/v1/configs/$schema`. Note that `additional_continuous_covariates` is a reserved `BaseConfig` field — overriding its default here means the EWARS model includes climate covariates by default, but deployments can create variant configs with a different set (e.g. `[]` for population-only) via `POST /api/v1/configs`.
 
 ### A.3.2 Shell runner command templates
 
@@ -220,8 +231,8 @@ Chapkit also writes a `config.yml` file into the working directory before invoki
 
 ```python
 info = MLServiceInfo(
-    id="ewars-template",
-    display_name="CHAP-EWARS Model",
+    id="chapkit-ewars-template",
+    display_name="CHAP-EWARS Model (chapkit)",
     version="1.0.0",
     description=(
         "Modified version of the World Health Organization (WHO) EWARS model. "
@@ -276,16 +287,22 @@ if DATABASE_URL.startswith("sqlite") and ":///" in DATABASE_URL:
     db_path = Path(DATABASE_URL.split("///")[1])
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
-app = MLServiceBuilder(
-    info=info,
-    config_schema=EwarsConfig,
-    hierarchy=hierarchy,
-    runner=runner,
-    database_url=DATABASE_URL,
-).build()
+app = (
+    MLServiceBuilder(
+        info=info,
+        config_schema=EwarsConfig,
+        hierarchy=hierarchy,
+        runner=runner,
+        database_url=DATABASE_URL,
+    )
+    .with_registration(keepalive_interval=15)
+    .build()
+)
 ```
 
-Leave this untouched unless you need a different persistence backend.
+`.with_registration()` enables self-registration with chap-core on startup via the `SERVICEKIT_ORCHESTRATOR_URL` environment variable. When unset, registration is skipped and the service runs standalone. See section B.8 for details.
+
+Leave the rest untouched unless you need a different persistence backend.
 
 ## A.4 Replace the placeholder scripts with your model code
 
@@ -591,35 +608,19 @@ Commit a small `example_data/` directory with canonical CHAP-format CSVs so cont
 
 If you are going to run this service against a real CHAP Core instance, the service should register itself on startup so CHAP Core knows about it. Without registration the service still works over HTTP — you just have to point CHAP Core at it by hand. With registration, CHAP Core picks it up automatically and keeps track of its health.
 
-The scaffolded `main.py` includes a commented-out `.with_registration(...)` block in the `MLServiceBuilder` chain. Uncomment and configure it when deploying:
-
-```python
-app = (
-    MLServiceBuilder(
-        info=info,
-        config_schema=EwarsConfig,
-        hierarchy=hierarchy,
-        runner=runner,
-        database_url=DATABASE_URL,
-    )
-    .with_registration(
-        orchestrator_url="https://chap.example.org/v2/services/$register",
-        registration_key="your-secret-key",  # or use SERVICEKIT_REGISTRATION_KEY env var
-    )
-    .build()
-)
-```
+Add `.with_registration(keepalive_interval=15)` to the `MLServiceBuilder` chain (already shown in section A.3.5). Registration is controlled entirely by environment variables — when `SERVICEKIT_ORCHESTRATOR_URL` is set, the service registers on startup; when unset, registration is skipped and the service runs standalone.
 
 What you get:
 
-- **Automatic registration on startup**, with retries on failure (default: 5 retries, 2s apart).
+- **Automatic registration after app startup**, with retries on failure (default: 5 retries, 2s apart). Registration fires after all routes are mounted, so chap-core's inline sync can immediately fetch configs from the service.
 - **Hostname auto-detection** — works inside a Docker container where the hostname is the container name.
-- **Keepalive pings** — the service re-announces itself every ~10s with a 30s TTL, so CHAP Core can tell when it goes away.
+- **Keepalive pings** — the service re-announces itself every 15s with a 30s TTL, so CHAP Core can tell when it goes away.
+- **Auto re-registration on 404** — if chap-core's Redis registry loses the service entry (e.g. after a chap restart), the keepalive loop detects the 404 and falls back to a fresh `register_service()` call automatically.
 - **Graceful deregistration on shutdown** — the service tells CHAP Core it is going offline instead of just disappearing.
 
-For Docker or Kubernetes deployments, prefer environment variables over hard-coding:
+Environment variables:
 
-- `SERVICEKIT_ORCHESTRATOR_URL` — the registration endpoint URL.
+- `SERVICEKIT_ORCHESTRATOR_URL` — the registration endpoint URL (e.g. `http://chap:8000/v2/services/$register`). When unset, registration is skipped entirely.
 - `SERVICEKIT_REGISTRATION_KEY` — the shared secret (only if CHAP Core has registration keys enabled).
 
 This is in Part B because the service runs fine without it for local development, CI, and `chapkit test`. But if the destination is a live chap-core environment, enabling it is effectively required — without it, CHAP Core will not know your service exists until an operator registers it manually.
@@ -667,7 +668,7 @@ The canonical worked example for every section above.
 
 | File | What to look at |
 |---|---|
-| `main.py` | Full chapkit service definition — 77 lines, imports through `.build()` |
+| `main.py` | Full chapkit service definition — ~100 lines, imports through `.build()` |
 | `pyproject.toml` | Minimal Python manifest with chapkit dep |
 | `scripts/train.R` | Minimal named-arg parser and no-op training pattern |
 | `scripts/predict.R` | `apply_adapters()`, `parse_config()`, and model invocation |
@@ -690,7 +691,7 @@ If for any reason you cannot run `chapkit init` (e.g. you are patching an existi
 name = "your-model-template"
 version = "0.1.0"
 requires-python = ">=3.13"
-dependencies = ["chapkit>=0.16.8"]
+dependencies = ["chapkit>=0.17.1"]
 ```
 
 Then run `uv sync` to generate `uv.lock`.
