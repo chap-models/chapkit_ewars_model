@@ -490,7 +490,7 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
       rm -rf /var/lib/apt/lists/*
   ```
   Replace `jammy` with your base image's Ubuntu codename. This approach is preferred over `uv python install` because it guarantees the correct architecture — important when building amd64 images on Apple Silicon hosts.
-- Pin `--platform=linux/amd64` only if one of your native dependencies (INLA, TMB, PROJ/GDAL builds, ...) is amd64-only.
+- Pin `--platform=linux/amd64` only if one of your native dependencies (INLA, TMB, PROJ/GDAL builds, ...) is amd64-only. When you do, also add `platform: linux/amd64` to the service in `compose.yml` — without it, Docker Compose may warn or refuse to run the image on ARM hosts (Apple Silicon Macs). **Apple Silicon users:** you also need Rosetta installed (`softwareupdate --install-rosetta`) and enabled in Docker Desktop (Settings → General → "Use Rosetta for x86\_64/amd64 emulation on Apple Silicon"). This is easy to miss if you are coming from a Windows or Intel Mac environment where amd64 images run natively.
 - Copy any extra asset directories your scripts read from (`example_data/`, `shapefiles/`, ...).
 
 The `uv.lock`-driven install (`uv sync --frozen --no-dev --no-install-project`) is the recommended pattern — it is fast and reproducible.
