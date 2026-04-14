@@ -477,7 +477,19 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 ### Things to adapt for your specific model
 
 - Swap the `FROM` line for your model's base image. R + INLA use the one above. For a plain R model without INLA, use an `r-base` or `rocker/*` image. For Python scientific stacks, you could keep the scaffolded Dockerfile if it already works.
-- If your base image does not include `python3.13`, install it (`apt-get install python3.13`) before the `ENV` block.
+- If your base image does not include `python3.13`, install it before the `ENV` block. On newer Ubuntu-based images (24.04+) a plain `apt-get install python3.13` may work. On older images (e.g. Ubuntu 22.04 Jammy), Python 3.13 is not in the default repositories — use the [deadsnakes PPA](https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa) instead:
+  ```dockerfile
+  RUN apt-get update && \
+      apt-get install -y ca-certificates curl gpg && \
+      curl -fsSL 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xF23C5A6CF475977595C89F51BA6932366A755776' \
+        | gpg --dearmor -o /etc/apt/trusted.gpg.d/deadsnakes.gpg && \
+      echo "deb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu jammy main" \
+        > /etc/apt/sources.list.d/deadsnakes.list && \
+      apt-get update && \
+      apt-get install -y python3.13 && \
+      rm -rf /var/lib/apt/lists/*
+  ```
+  Replace `jammy` with your base image's Ubuntu codename. This approach is preferred over `uv python install` because it guarantees the correct architecture — important when building amd64 images on Apple Silicon hosts.
 - Pin `--platform=linux/amd64` only if one of your native dependencies (INLA, TMB, PROJ/GDAL builds, ...) is amd64-only.
 - Copy any extra asset directories your scripts read from (`example_data/`, `shapefiles/`, ...).
 
