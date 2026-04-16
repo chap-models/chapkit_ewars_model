@@ -1,10 +1,10 @@
-# chapkit-ewars-template
+# chapkit-ewars-model
 
 > WHO EWARS Bayesian INLA disease-forecasting model, wrapped as a [chapkit](https://github.com/dhis2-chap/chapkit) service and ready to plug into [chap-core](https://github.com/dhis2-chap/chap-core).
 
-[![CI](https://github.com/chap-models/chapkit_ewars_template/actions/workflows/ci.yml/badge.svg)](https://github.com/chap-models/chapkit_ewars_template/actions/workflows/ci.yml)
-[![Docker](https://github.com/chap-models/chapkit_ewars_template/actions/workflows/publish-docker.yml/badge.svg)](https://github.com/chap-models/chapkit_ewars_template/actions/workflows/publish-docker.yml)
-[![GHCR](https://img.shields.io/badge/ghcr.io-chap--models%2Fchapkit__ewars__template-blue?logo=docker)](https://github.com/chap-models/chapkit_ewars_template/pkgs/container/chapkit_ewars_template)
+[![CI](https://github.com/chap-models/chapkit_ewars_model/actions/workflows/ci.yml/badge.svg)](https://github.com/chap-models/chapkit_ewars_model/actions/workflows/ci.yml)
+[![Docker](https://github.com/chap-models/chapkit_ewars_model/actions/workflows/publish-docker.yml/badge.svg)](https://github.com/chap-models/chapkit_ewars_model/actions/workflows/publish-docker.yml)
+[![GHCR](https://img.shields.io/badge/ghcr.io-chap--models%2Fchapkit__ewars__model-blue?logo=docker)](https://github.com/chap-models/chapkit_ewars_model/pkgs/container/chapkit_ewars_model)
 [![Python](https://img.shields.io/badge/python-3.13%2B-blue)](https://www.python.org/)
 [![License: GPLv3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
@@ -47,7 +47,7 @@ chap-core auto-detects chapkit services and drives them over REST — no config 
 
 | What | Where | Current value |
 | --- | --- | --- |
-| Service id | `MLServiceInfo.id` | `chapkit-ewars-template` |
+| Service id | `MLServiceInfo.id` | `chapkit-ewars-model` |
 | Display name | `MLServiceInfo.display_name` | `CHAP-EWARS Model (chapkit)` |
 | Period type | `MLServiceInfo.period_type` | `monthly` |
 | Required covariates | `MLServiceInfo.required_covariates` | `["population"]` |

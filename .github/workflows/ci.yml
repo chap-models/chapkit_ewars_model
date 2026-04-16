@@ -37,11 +37,11 @@ jobs:
           file: Dockerfile
           push: false
           load: true
-          tags: chapkit-ewars-template:ci
+          tags: chapkit-ewars-model:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Start container
-        run: docker run -d --name chapkit-ci -p 8000:8000 chapkit-ewars-template:ci
+        run: docker run -d --name chapkit-ci -p 8000:8000 chapkit-ewars-model:ci
       - name: Wait for /health
         run: |
           for i in $(seq 1 45); do

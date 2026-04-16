@@ -1,7 +1,7 @@
 .PHONY: help build run run-ghcr lint
 
-IMAGE      ?= chapkit-ewars-template:latest
-GHCR_IMAGE ?= ghcr.io/chap-models/chapkit_ewars_template:latest
+IMAGE      ?= chapkit-ewars-model:latest
+GHCR_IMAGE ?= ghcr.io/chap-models/chapkit_ewars_model:latest
 
 help:
 	@echo "Usage: make [target]"
@@ -18,11 +18,11 @@ build:
 
 run: build
 	@echo ">>> Running $(IMAGE) on :8000"
-	@docker run --rm -p 8000:8000 --name chapkit-ewars-template $(IMAGE)
+	@docker run --rm -p 8000:8000 --name chapkit-ewars-model $(IMAGE)
 
 run-ghcr:
 	@echo ">>> Running $(GHCR_IMAGE) on :8000"
-	@docker run --rm --pull always --platform linux/amd64 -p 8000:8000 --name chapkit-ewars-template $(GHCR_IMAGE)
+	@docker run --rm --pull always --platform linux/amd64 -p 8000:8000 --name chapkit-ewars-model $(GHCR_IMAGE)
 
 lint:
 	@echo ">>> Ruff format check"

@@ -94,7 +94,7 @@ wheels = [
 ]
 
 [[package]]
-name = "chapkit-ewars-template"
+name = "chapkit-ewars-model"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

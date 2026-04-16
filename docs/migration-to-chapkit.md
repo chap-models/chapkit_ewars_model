@@ -4,12 +4,12 @@ This guide walks through converting a standalone ML model (e.g. an R model drive
 
 The recommended path is to scaffold a fresh chapkit project with the `chapkit` CLI and then port your model code into it. That is what this guide covers.
 
-## Worked example: `ewars_template` to `chapkit_ewars_template`
+## Worked example: `ewars_template` to `chapkit_ewars_model`
 
 The concrete before/after used throughout this guide:
 
 - **Starting point:** [`chap-models/ewars_template`](https://github.com/chap-models/ewars_template) `main` branch — a pre-chapkit R model driven by MLflow. Flat repo with `MLproject`, `train.R`, `predict.R`, `lib.R`, `isolated_run.R`, `example_config.yaml`, `pure_config.yaml`, and pre-computed example outputs under `example_data/` and `example_data_monthly/`.
-- **Ending point:** [`chap-models/chapkit_ewars_template`](https://github.com/chap-models/chapkit_ewars_template) — the migrated service. A 77-line `main.py`, R scripts moved into `scripts/` with named CLI flags and a column adapter, a Python + uv Dockerfile layered on an R-INLA base image, and CI that runs `chapkit test` against the built container.
+- **Ending point:** [`chap-models/chapkit_ewars_model`](https://github.com/chap-models/chapkit_ewars_model) — the migrated service. A 77-line `main.py`, R scripts moved into `scripts/` with named CLI flags and a column adapter, a Python + uv Dockerfile layered on an R-INLA base image, and CI that runs `chapkit test` against the built container.
 
 Every file path and code snippet in this guide is lifted verbatim from the ending-point repository.
 
@@ -111,7 +111,7 @@ The `--template` flag picks the scaffold shape:
 | Template | Use when |
 |---|---|
 | `ml` *(default)* | Model logic lives inline in `main.py` as Python functions. Fine for pure-Python models with no external script dependencies. |
-| `ml-shell` | Model logic lives in external scripts invoked via `ShellModelRunner`. **Use this for R, Julia, or any non-Python model.** This is the template `chapkit_ewars_template` is based on. |
+| `ml-shell` | Model logic lives in external scripts invoked via `ShellModelRunner`. **Use this for R, Julia, or any non-Python model.** This is the template `chapkit_ewars_model` is based on. |
 | `task` | Generic task runner, not a machine-learning service. Ignore for model migrations. |
 
 For migrating an existing R (or other non-Python) model, `--template ml-shell` is the right choice.
@@ -153,11 +153,11 @@ At this point you have a working chapkit service using placeholder scripts. The 
 
 ## A.3 Customize `main.py`
 
-The scaffold's `main.py` already wires up imports, `ShellModelRunner`, `ArtifactHierarchy`, and `MLServiceBuilder`. You only need to edit four things: config fields, command templates, service info, and (optionally) the hierarchy name. Each is walked through below, with concrete examples from `chapkit_ewars_template`.
+The scaffold's `main.py` already wires up imports, `ShellModelRunner`, `ArtifactHierarchy`, and `MLServiceBuilder`. You only need to edit four things: config fields, command templates, service info, and (optionally) the hierarchy name. Each is walked through below, with concrete examples from `chapkit_ewars_model`.
 
 ### Scaffold extras you can trim
 
-The generated `main.py` also ships with some things the reference `chapkit_ewars_template/main.py` does not have. Most are safe to delete or keep as taste dictates:
+The generated `main.py` also ships with some things the reference `chapkit_ewars_model/main.py` does not have. Most are safe to delete or keep as taste dictates:
 
 - A module-level docstring (`"""ML service for <project-name>."""`).
 - A `if __name__ == "__main__":` runner that calls `run_app("main:app", reload=False)`, allowing `python main.py` as an alternative to `uvicorn main:app`.
@@ -231,7 +231,7 @@ Chapkit also writes a `config.yml` file into the working directory before invoki
 
 ```python
 info = MLServiceInfo(
-    id="chapkit-ewars-template",
+    id="chapkit-ewars-model",
     display_name="CHAP-EWARS Model (chapkit)",
     version="1.0.0",
     description=(
@@ -319,7 +319,7 @@ scripts/
 
 Whatever the language, your scripts must follow chapkit's shell contract. There are five requirements. The first four are universal — every migration needs them. The fifth (`source()` paths) only applies if your scripts used to sit at the repo root.
 
-> **A note on scope.** The examples below are lifted from `chapkit_ewars_template`, but not every edit EWARS needed applies to every model. EWARS also has model-specific predict-script changes — robust `time_period` parsing, weekly vs monthly dispatch, year offsetting — that were added during *its* migration. If your original predict script already handles these things cleanly, leave them alone. Copy only the universal changes, then touch your model code as little as possible.
+> **A note on scope.** The examples below are lifted from `chapkit_ewars_model`, but not every edit EWARS needed applies to every model. EWARS also has model-specific predict-script changes — robust `time_period` parsing, weekly vs monthly dispatch, year offsetting — that were added during *its* migration. If your original predict script already handles these things cleanly, leave them alone. Copy only the universal changes, then touch your model code as little as possible.
 
 ### A.4.1 Parse named CLI flags
 

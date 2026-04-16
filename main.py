@@ -51,7 +51,7 @@ runner: ShellModelRunner[EwarsConfig] = ShellModelRunner(
 )
 
 info = MLServiceInfo(
-    id="chapkit-ewars-template",
+    id="chapkit-ewars-model",
     display_name="CHAP-EWARS Model (chapkit)",
     version="1.0.0",
     description=(
