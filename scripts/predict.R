@@ -8,18 +8,22 @@ source("scripts/lib.R")
 library(sf)
 library(spdep)
 
-# --- Column adapter: rename CHAP standard names to internal model names ---
+# --- Column adapter: alias CHAP standard names to internal model names ---
+# Copies rather than renames so both names coexist (matches upstream's example
+# data shape, where e.g. `location` and `ID_spat` are both present). The
+# original CHAP names are needed in the output (`location`) and downstream
+# logic; the internal names are what the formulas reference.
 apply_adapters <- function(df) {
-  rename_map <- c(
+  alias_map <- c(
     "disease_cases" = "Cases",
     "population" = "E",
     "location" = "ID_spat",
     "year" = "ID_year"
   )
-  for (from in names(rename_map)) {
-    to <- rename_map[[from]]
+  for (from in names(alias_map)) {
+    to <- alias_map[[from]]
     if (from %in% colnames(df) && !(to %in% colnames(df))) {
-      names(df)[names(df) == from] <- to
+      df[[to]] <- df[[from]]
     }
   }
   return(df)
@@ -175,6 +179,10 @@ predict_chap <- function(hist_fn, future_fn, preds_fn, config_path) {
   print(colnames(df))
   df <- generated$data
   print(colnames(df))
+  # INLA's replicate= argument needs integer indices, so map string locations
+  # to a 1-based integer factor. The original `location` column is preserved
+  # for the output.
+  df$ID_spat <- as.integer(as.factor(df$ID_spat))
   model <- inla(formula = lagged_formula, data = df, family = "nbinomial", offset = log(E),
                 control.inla = list(strategy = 'adaptive'),
                 control.compute = list(dic = TRUE, config = TRUE, cpo = TRUE, return.marginals = FALSE),
@@ -195,7 +203,7 @@ predict_chap <- function(hist_fn, future_fn, preds_fn, config_path) {
     y.pred[, s.idx] <- rnbinom(mpred, mu = exp(xx.sample[-1]), size = xx.sample[1])
   }
 
-  new.df <- data.frame(time_period = df$time_period[idx.pred], location = df$ID_spat[idx.pred], y.pred)
+  new.df <- data.frame(time_period = df$time_period[idx.pred], location = df$location[idx.pred], y.pred)
   colnames(new.df) <- c('time_period', 'location', paste0('sample_', 0:(s-1)))
 
   write.csv(new.df, preds_fn, row.names = FALSE)
