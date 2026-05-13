@@ -31,6 +31,7 @@ parse_config <- function(config_path) {
     return(list(
       n_lags = 3,
       precision = 0.01,
+      region_seasonal = FALSE,
       additional_continuous_covariates = character()
     ))
   }
@@ -38,6 +39,7 @@ parse_config <- function(config_path) {
   list(
     n_lags = if (!is.null(config$n_lags)) config$n_lags else 3,
     precision = if (!is.null(config$precision)) config$precision else 0.01,
+    region_seasonal = if (!is.null(config$region_seasonal)) config$region_seasonal else FALSE,
     additional_continuous_covariates = if (!is.null(config$additional_continuous_covariates)) {
       config$additional_continuous_covariates
     } else {
@@ -47,28 +49,42 @@ parse_config <- function(config_path) {
 }
 
 # --- Model generation functions ---
-generate_bacic_model <- function(df, covariates, nlag) {
+generate_bacic_model <- function(df, covariates, nlag, region_seasonal) {
   formula_str <- paste(
     "Cases ~ 1 +",
     "f(ID_spat, model='iid', replicate=ID_year) +",
     "f(ID_time_cyclic, model='rw1', cyclic=TRUE, scale.model=TRUE)"
   )
+  if (region_seasonal) {
+    formula_str <- paste(
+      formula_str,
+      "+ f(ID_time_cyclic2, model='rw1', cyclic=TRUE, scale.model=TRUE, replicate=ID_spat)"
+    )
+  }
   model_formula <- as.formula(formula_str)
   return(list(formula = model_formula, data = df))
 }
 
-generate_lagged_model <- function(df, covariates, nlag) {
+generate_lagged_model <- function(df, covariates, nlag, region_seasonal) {
   basis_list <- list()
 
-  for (cov in covariates) {
-    var_data <- df[[cov]]
+  stopifnot(
+    "nlag must have length 1 or the same length as the number of covariates" =
+      length(nlag) == 1 | length(nlag) == length(covariates)
+  )
+  if (length(nlag) < length(covariates)) {
+    nlag <- rep(nlag, times = length(covariates))
+  }
+
+  for (i in seq_along(covariates)) {
+    var_data <- df[[covariates[i]]]
     basis <- crossbasis(
-      var_data, lag = nlag,
+      var_data, lag = c(1, nlag[i]),
       argvar = list(fun = "ns", knots = equalknots(var_data, 2)),
-      arglag = list(fun = "ns", knots = nlag / 2),
+      arglag = list(fun = "ns", knots = equalknots(1:nlag[i], round(nlag[i] / 2))),
       group = df$ID_spat
     )
-    basis_name <- paste0("basis_", cov)
+    basis_name <- paste0("basis_", covariates[i])
     colnames(basis) <- paste0(basis_name, ".", colnames(basis))
     basis_list[[basis_name]] <- basis
   }
@@ -85,6 +101,12 @@ generate_lagged_model <- function(df, covariates, nlag) {
     "f(ID_time_cyclic, model='rw1', cyclic=TRUE, scale.model=TRUE) +",
     basis_terms
   )
+  if (region_seasonal) {
+    formula_str <- paste(
+      formula_str,
+      "+ f(ID_time_cyclic2, model='rw1', cyclic=TRUE, scale.model=TRUE, replicate=ID_spat)"
+    )
+  }
 
   model_formula <- as.formula(formula_str)
   return(list(formula = model_formula, data = model_data))
@@ -96,8 +118,10 @@ predict_chap <- function(hist_fn, future_fn, preds_fn, config_path) {
   covariate_names <- config$additional_continuous_covariates
   nlag <- config$n_lags
   precision <- config$precision
+  region_seasonal <- config$region_seasonal
 
-  cat("Config: n_lags=", nlag, " precision=", precision, "\n")
+  cat("Config: n_lags=", paste(nlag, collapse = ","), " precision=", precision,
+      " region_seasonal=", region_seasonal, "\n")
   cat("Covariates:", paste(covariate_names, collapse=", "), "\n")
 
   historic_df <- read.csv(hist_fn)
@@ -132,19 +156,20 @@ predict_chap <- function(hist_fn, future_fn, preds_fn, config_path) {
   if ("week" %in% colnames(df)) {
     df <- mutate(df, ID_time_cyclic = week)
     df <- offset_years_and_weeks(df)
-    nlag <- 12
   } else {
     df <- mutate(df, ID_time_cyclic = month)
     df <- offset_years_and_months(df)
-    nlag <- 3
   }
+
+  # Mirror column for the region-specific seasonal effect
+  df$ID_time_cyclic2 <- df$ID_time_cyclic
 
   df$ID_year <- df$ID_year - min(df$ID_year) + 1
 
   if (length(covariate_names) == 0) {
-    generated <- generate_bacic_model(df, covariate_names, nlag)
+    generated <- generate_bacic_model(df, covariate_names, nlag, region_seasonal)
   } else {
-    generated <- generate_lagged_model(df, covariate_names, nlag)
+    generated <- generate_lagged_model(df, covariate_names, nlag, region_seasonal)
   }
   lagged_formula <- generated$formula
   print(colnames(df))
