@@ -24,6 +24,10 @@ ENV GIT_REVISION=${GIT_REVISION}
 COPY main.py ./
 COPY scripts/ ./scripts/
 
+# INLA's binaries in the base image are executable by root only; open the R library up
+# so the unprivileged user can run them (chapkit-images will ship this fix, harmless after).
+RUN chmod -R a+rX /usr/local/lib/R/site-library
+
 # Writable paths at runtime are /app/data (SQLite, a volume in compose.yml) and /tmp
 # (ML workspaces, a tmpfs in compose.yml); everything else stays read-only.
 RUN mkdir -p /app/data && chown -R chapkit:chapkit /app/data
