@@ -14,7 +14,7 @@ This repo packages a modified version of the WHO EWARS (Early Warning, Alert and
 
 Unlike the older `MLproject`-based templates, there is no YAML config and no external adapter file. chap-core discovers the service via `GET /api/v1/info`, and all chapkit wiring lives in a single [`main.py`](main.py). Column adapting to the model's internal names happens inside the R code.
 
-**Inputs:** monthly (or weekly) CSVs with `time_period, rainfall, mean_temperature, disease_cases, population, location`.
+**Inputs:** monthly or weekly CSVs with `time_period, rainfall, mean_temperature, disease_cases, population, location`.
 **Outputs:** a CSV of 1000 posterior samples per forecast row (`sample_0 .. sample_999`).
 
 ## Quickstart — run the prebuilt image
@@ -49,7 +49,7 @@ chap-core auto-detects chapkit services and drives them over REST — no config 
 | --- | --- | --- |
 | Service id | `MLServiceInfo.id` | `chapkit-ewars-model` |
 | Display name | `MLServiceInfo.display_name` | `CHAP-EWARS Model (chapkit)` |
-| Period type | `MLServiceInfo.period_type` | `monthly` |
+| Period type | `MLServiceInfo.period_type` | `any` (weekly and monthly) |
 | Required covariates | `MLServiceInfo.required_covariates` | `["population"]` |
 | Free continuous covariates | `allow_free_additional_continuous_covariates` | `True` |
 | Prediction-period bounds | `min/max_prediction_periods` | `0 – 100` |
