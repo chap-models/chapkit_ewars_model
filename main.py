@@ -75,7 +75,7 @@ info = MLServiceInfo(
             "https://dhis2-chap.github.io/chap-core/external_models/overview_of_supported_models.html"
         ),
     ),
-    period_type=PeriodType.monthly,
+    period_type=PeriodType.any,
     allow_free_additional_continuous_covariates=True,
     required_covariates=["population"],
     min_prediction_periods=0,

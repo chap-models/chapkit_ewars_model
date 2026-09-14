@@ -250,7 +250,7 @@ info = MLServiceInfo(
         contact_email="knut.rand@dhis2.org",
         citation_info="...",
     ),
-    period_type=PeriodType.monthly,
+    period_type=PeriodType.any,
     allow_free_additional_continuous_covariates=True,
     required_covariates=["population"],
     min_prediction_periods=0,
@@ -263,7 +263,7 @@ Fields you almost always need to customize:
 - `id` — unique service identifier. Lowercase, hyphenated.
 - `display_name`, `version`, `description` — human-readable metadata.
 - `model_metadata` — author, organization, assessed confidence, citation.
-- `period_type` — `PeriodType.monthly` or `PeriodType.weekly`.
+- `period_type` — `PeriodType.monthly`, `PeriodType.weekly`, or `PeriodType.any` if the model handles both (chapkit >= 2.0.1).
 - `required_covariates` — list of canonical CHAP column names your model requires in addition to `disease_cases`.
 - `allow_free_additional_continuous_covariates` — whether the model can accept extra continuous covariates beyond those required.
 - `min_prediction_periods`, `max_prediction_periods` — forecast horizon bounds.
