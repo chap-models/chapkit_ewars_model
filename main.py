@@ -57,7 +57,7 @@ runner: ShellModelRunner[EwarsConfig] = ShellModelRunner(
 info = MLServiceInfo(
     id="chapkit-ewars-model",
     display_name="CHAP-EWARS Model (chapkit)",
-    version="1.0.0",
+    version="1.0.1",
     description=(
         "Chapkit-based version of the CHAP-EWARS model, runnable alongside the legacy EWARS model. "
         "Modified version of the World Health Organization (WHO) EWARS model. "
