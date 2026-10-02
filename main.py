@@ -100,6 +100,7 @@ app = (
         runner=runner,
         database_url=DATABASE_URL,
     )
+    .with_monitoring()
     .with_registration(keepalive_interval=15)
     .build()
 )
