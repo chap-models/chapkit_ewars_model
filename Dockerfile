@@ -1,7 +1,7 @@
 # R-INLA is amd64-only.
 ARG BASE_PLATFORM=linux/amd64
 
-FROM --platform=${BASE_PLATFORM} ghcr.io/dhis2-chap/chapkit-r-inla:latest@sha256:71ccd15298303d05da310b48450453c3d7be4ee1ad3fede986170473745bdb0e
+FROM --platform=${BASE_PLATFORM} ghcr.io/dhis2-chap/chapkit-r-inla:latest@sha256:850d3a26dc68efe389d867842160e567e5bce76595737089a2dcd55a52c13f2a
 
 ENV UV_PROJECT_ENVIRONMENT=/app/.venv
 
