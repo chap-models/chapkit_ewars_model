@@ -1,6 +1,6 @@
 [project]
 name = "chapkit-ewars-model"
-version = "0.1.0"
+version = "1.0.6"
 description = "Chapkit version of the modified WHO EWARS Bayesian INLA model for disease case forecasting — a chap-core model template showcasing chapkit integration."
 requires-python = ">=3.13"
 dependencies = [
